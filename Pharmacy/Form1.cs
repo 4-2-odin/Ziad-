@@ -21,19 +21,13 @@ namespace Pharmacy
         {
             if (username.Text == "kkk" && password.Text == "777")
             {
-                Form2 f = new Form2();
-                f.Show();
+                Program.f2.Show();
                 this.Hide();
-
 
             }
             else
             {
                 MessageBox.Show("  Invalid username or password");
-                username.Text = "";
-                password.Text = "";
-
-
             }
         }
     }

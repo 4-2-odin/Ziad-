@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
 
 namespace Pharmacy
 {
@@ -14,10 +15,241 @@ namespace Pharmacy
     {
         List l = new List();
         double _balance = 0;
+        class Node
+        {
+            string dataname;
+            int dataqnt;
+            double dataprice;
+            Node next;
+
+            public string DataN
+            {
+                set { dataname = value; }
+                get { return dataname; }
+            }
+
+            public int DataQ
+            {
+                set { dataqnt = value; }
+                get { return dataqnt; }
+            }
+
+            public double DataP
+            {
+                set { dataprice = value; }
+                get { return dataprice; }
+            }
+
+            public Node Next
+            {
+                set { next = value; }
+                get { return next; }
+            }
+
+            public Node(string datan, int dataq, double datap)
+            {
+                this.dataname = datan;
+                this.dataqnt = dataq;
+                this.dataprice = datap;
+                next = null;
+            }
+        }
+
+        class List
+        {
+            public Node start;
+            public Node tail;
+
+            public List()
+            {
+                start = tail = null;
+            }
+
+            public void add(string datan, int dataq, double datap, string loaderORNot)
+            {
+                Node tmp = new Node(datan, dataq, datap);
+                if (start == null)
+                {
+                    start = tmp;
+                    tail = tmp;
+                    if (loaderORNot == "Not")
+                        MessageBox.Show(dataq + " box(es) of medicine " + datan + " has been added");
+
+                }
+                else
+                {
+                    tail.Next = tmp;
+                    tail = tmp;
+                    if (loaderORNot == "Not")
+                        MessageBox.Show(dataq + " box(es) of medicine " + datan + " has been added");
+                }
+            }
+
+
+
+            public void delete(string datan)
+            {
+                if (start == null)
+                {
+                    MessageBox.Show("The pharmacy is empty");
+                    return;
+                }
+                if (start.DataN == datan)
+                {
+                    start = start.Next;
+                    MessageBox.Show("The medicine " + datan + " is removed");
+                    return;
+                }
+
+                Node prev = start;
+                Node tmp = start.Next;
+
+                while (tmp != null)
+                {
+                    if (tmp.DataN == datan)
+                    {
+                        prev.Next = tmp.Next;
+                        MessageBox.Show("The medicine " + datan + " is removed");
+                        return;
+                    }
+                    prev = prev.Next;
+                    tmp = tmp.Next;
+                }
+                Console.WriteLine("The medicine" + datan + " doesn't exist");
+            }
+
+            public int noOfMed()
+            {
+                Node q = start;
+                int noOfMed = 0;
+                while (q != null)
+                {
+                    q = q.Next;
+                    noOfMed++;
+                }
+                return noOfMed;
+            }
+
+            public double search(string datan, int dataq)
+            {
+                Node q = start;
+
+                while (q != null)
+                {
+                    if (q.DataN == datan)
+                    {
+                        if (q.DataQ == 0)
+                        {
+                            return -5; // Out of stock
+                        }
+                        else if (q.DataQ < dataq)
+                        {
+                            return 0; // There is only x Boxes available
+                        }
+                        else if (q.DataQ >= dataq)
+                        {
+                            q.DataQ = q.DataQ - dataq;
+                            return q.DataP; // Returning the price
+                        }
+                    }
+                    q = q.Next;
+
+                }
+
+                return -1; // Not Found
+
+            }
+
+            public void upgrade(string datan, double up)
+            {
+                Node q = start;
+
+                while (q != null)
+                {
+                    if (q.DataN == datan)
+                    {
+
+                        MessageBox.Show("The medicine " + q.DataN + " price has changed from " + q.DataP + " to " + up);
+                        q.DataP = up;
+                        return;
+                    }
+                    q = q.Next;
+                }
+                MessageBox.Show("This medicine isn't found in the pharmacy");
+            }
+
+            public void display()
+            {
+                string stock = "";
+                Node q = start;
+
+                if (start == null)
+                {
+                    MessageBox.Show("Stock is empty");
+                }
+                else
+                {
+                    while (q != null)
+                    {
+                        stock += "\nMedicine: " + q.DataN + " || Quantity: " + q.DataQ + " || Price/box: " + q.DataP;
+                        q = q.Next;
+                    }
+                    MessageBox.Show(stock);
+                }
+            }
+
+            public void OnClosing()
+            {
+                if (start != null)
+                {
+                    Node q = start;
+
+                    using (FileStream fs = new FileStream("stock.txt", FileMode.Create, FileAccess.Write))
+                    {
+                        StreamWriter sr = new StreamWriter(fs);
+                        while (q != null)
+                        {
+                            sr.WriteLine("/////");
+                            sr.WriteLine(q.DataN);
+                            sr.WriteLine(q.DataQ);
+                            sr.WriteLine(q.DataP);
+                            q = q.Next;
+                        }
+                        sr.Flush();
+                    }
+                }
+            }
+            public void Loader()
+            {
+                Node q = start;
+                try
+                {
+
+
+                    using (FileStream fs = new FileStream("stock.txt", FileMode.Open, FileAccess.Read))
+                    {
+                        StreamReader sr = new StreamReader(fs);
+                        while (sr.ReadLine() == "/////")
+                        {
+                            string n = sr.ReadLine();
+                            int qun = Convert.ToInt32(sr.ReadLine());
+                            double p = Convert.ToDouble(sr.ReadLine());
+                            add(n, qun, p, "");
+
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
+
+
         public Form2()
         {
             InitializeComponent();
-            
+            l.Loader();
         }
 
         private void hideALL()
@@ -66,7 +298,7 @@ namespace Pharmacy
                 {
                     int qnt = Convert.ToInt32(qntOfMed.Text);
                     double price = Convert.ToDouble(pri.Text);
-                    l.add(nameOfMed.Text, qnt, price);
+                    l.add(nameOfMed.Text, qnt, price, "Not");
                 }
                 catch
                 {
@@ -137,7 +369,7 @@ namespace Pharmacy
 
         private void upbutton_Click(object sender, EventArgs e)
         {
-            if(upgradeN.Text != "")
+            if (upgradeN.Text != "")
             {
                 try
                 {
@@ -155,189 +387,15 @@ namespace Pharmacy
             }
             hideALL();
         }
-    }
 
+        
 
+       
 
-    class Node
-    {
-        string dataname;
-        int dataqnt;
-        double dataprice;
-        Node next;
-
-        public string DataN
+        private void Form2_FormClosing(object sender, FormClosingEventArgs e)
         {
-            set { dataname = value; }
-            get { return dataname; }
-        }
-
-        public int DataQ
-        {
-            set { dataqnt = value; }
-            get { return dataqnt; }
-        }
-
-        public double DataP
-        {
-            set { dataprice = value; }
-            get { return dataprice; }
-        }
-
-        public Node Next
-        {
-            set { next = value; }
-            get { return next; }
-        }
-
-        public Node(string datan, int dataq, double datap)
-        {
-            this.dataname = datan;
-            this.dataqnt = dataq;
-            this.dataprice = datap;
-            next = null;
-        }
-    }
-
-    class List
-    {
-        public Node start;
-        public Node tail;
-
-        public List()
-        {
-            start = tail = null;
-        }
-
-        public void add(string datan, int dataq, double datap)
-        {
-            Node tmp = new Node(datan, dataq, datap);
-            if (start == null)
-            {
-                start = tmp;
-                tail = tmp;
-                MessageBox.Show(dataq + " box(es) of medicine " + datan + " has been added");
-
-            }
-            else
-            {
-                tail.Next = tmp;
-                tail = tmp;
-                MessageBox.Show(dataq + " box(es) of medicine " + datan + " has been added");
-            }
-        }
-    
-    
-
-        public void delete(string datan)
-        {
-            if (start == null)
-            {
-                MessageBox.Show("The pharmacy is empty");
-                return;
-            }
-            if (start.DataN == datan)
-            {
-                start = start.Next;
-                MessageBox.Show("The medicine " + datan + " is removed");
-                return;
-            }
-
-            Node prev = start;
-            Node tmp = start.Next;
-
-            while (tmp != null)
-            {
-                if (tmp.DataN == datan)
-                {
-                    prev.Next = tmp.Next;
-                    MessageBox.Show("The medicine " + datan + " is removed");
-                    return;
-                }
-                prev = prev.Next;
-                tmp = tmp.Next;
-            }
-            Console.WriteLine("The medicine" + datan + " doesn't exist");
-        }
-
-        public int noOfMed()
-        {
-            Node q = start;
-            int noOfMed = 0;
-            while(q != null)
-            {
-                q = q.Next;
-                noOfMed++;
-            }
-            return noOfMed;
-        }
-
-        public double search(string datan, int dataq)
-        {
-            Node q = start;
-
-            while (q != null)
-            {
-                if (q.DataN == datan)
-                {
-                    if (q.DataQ == 0)
-                    {
-                        return -5; // Out of stock
-                    }
-                    else if (q.DataQ < dataq)
-                    {
-                        return 0; // There is only x Boxes available
-                    }
-                    else if (q.DataQ >= dataq)
-                    {
-                        q.DataQ = q.DataQ - dataq;
-                        return q.DataP; // Returning the price
-                    }
-                }
-                q = q.Next;
-
-            }
-
-            return -1; // Not Found
-
-        }
-
-        public void upgrade(string datan,double up)
-        {
-            Node q = start;
-            
-            while(q!= null)
-            {
-                if(q.DataN == datan)
-                {
-
-                    MessageBox.Show("The medicine " + q.DataN + " price has changed from " + q.DataP + " to " + up);
-                    q.DataP = up;
-                    return;
-                }
-                q = q.Next;
-            }
-            MessageBox.Show("This medicine isn't found in the pharmacy");
-        }
-
-        public void display()
-        {
-            string stock = "";
-            Node q = start;
-
-            if(start == null)
-            {
-                MessageBox.Show("Stock is empty");
-            }
-            else
-            {
-                while(q!=null)
-                {
-                    stock += "\nMedicine: " + q.DataN + " || Quantity: " + q.DataQ + " || Price/box: " + q.DataP;
-                    q = q.Next;
-                }
-                MessageBox.Show(stock);
-            }
+            l.OnClosing();
+            Program.f1.Close();
         }
     }
 }
